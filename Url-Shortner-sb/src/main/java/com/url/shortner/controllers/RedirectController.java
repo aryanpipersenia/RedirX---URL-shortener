@@ -27,6 +27,9 @@ public class RedirectController {
     public ResponseEntity<Void> redirect(@PathVariable @NotBlank(message = "Short URL cannot be blank") String shortUrl) {
         UrlMapping urlMapping = urlMappingService.getOriginalUrl(shortUrl);
         if (urlMapping != null) {
+            // Record the click event (bypassing the cache)
+            urlMappingService.recordClickEvent(urlMapping);
+
             HttpHeaders httpHeaders = new HttpHeaders();
 
             // Ensure no double slash

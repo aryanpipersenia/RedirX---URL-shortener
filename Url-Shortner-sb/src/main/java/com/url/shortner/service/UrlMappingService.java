@@ -42,18 +42,6 @@ public class UrlMappingService {
 
     }
 
-    // Generate a random 8-character alphanumeric string
-    private String generateShortUrl1() {
-        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-        Random random = new Random();
-        StringBuilder shortUrl = new StringBuilder(8);
-
-        for(int i = 0;i < 8 ; i++){
-            shortUrl.append(characters.charAt(random.nextInt(characters.length())));
-        }
-        return shortUrl.toString();
-    }
 
     private String generateShortUrl() {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -115,21 +103,24 @@ public class UrlMappingService {
         return clickEvents.stream().collect(Collectors.groupingBy(click -> click.getClickDate().toLocalDate(), Collectors.counting()));
     }
 
-    // Retrieve original URL and increment click count
+    // Retrieve original URL mapping (cached)
+    @org.springframework.cache.annotation.Cacheable(value = "urls", key = "#shortUrl")
     public UrlMapping getOriginalUrl(String shortUrl) {
-        UrlMapping urlMapping = urlMappingRepository.findByShortUrl(shortUrl);
+        return urlMappingRepository.findByShortUrl(shortUrl);
+    }
+
+    // Record click event and update click count (bypass cache)
+    public void recordClickEvent(UrlMapping urlMapping) {
         if(urlMapping != null){
             urlMapping.setClickCount(urlMapping.getClickCount() + 1);
             urlMappingRepository.save(urlMapping);
 
             // record Click event
-
             ClickEvent clickEvent =  new ClickEvent();
             clickEvent.setClickDate(LocalDateTime.now());
             clickEvent.setUrlMapping(urlMapping);
             clickEventRepository.save(clickEvent);
         }
-        return urlMapping;
     }
 
     // Delete URL mapping along with its click events
